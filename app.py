@@ -8,19 +8,16 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-# 🔹 Load environment variables
+# Load environment variables
 load_dotenv()
 app = Flask(__name__)
 
-# Allow requests from frontend
+# 🔹 Allow ONLY requests from your frontend
 CORS(app, resources={r"/*": {"origins": "https://homebasebank-1smm.vercel.app"}})
 
-@app.route('/', methods=['GET', 'POST'])
-def handle_request():
-    if request.method == 'POST':
-        data = request.json
-        return jsonify({"message": "Data received", "data": data}), 200
-    return jsonify({"message": "Server is running"}), 200  # Handle GET requests properly
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({"message": "Server is running!"}), 200
 
 # 🔹 Mail Configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -30,6 +27,7 @@ app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+app.config['MAIL_SUPPRESS_SEND'] = False  # Ensure Flask-Mail actually sends emails
 
 mail = Mail(app)
 
@@ -47,7 +45,6 @@ def generate_pdf(data):
         elements.append(Paragraph(f"<b>{label}:</b> {value}", styles["Normal"]))
         elements.append(Spacer(1, 6))
 
-    # 🔹 Add Form Fields Neatly
     fields = [
         "Referee1Name", "Referee1Address", "Referee2Name", "Referee2Address", 
         "Referee3Name", "Referee3Address", "Institution", "Registryaddress", 
@@ -61,17 +58,25 @@ def generate_pdf(data):
     buffer.seek(0)
     return buffer.getvalue()
 
+# 🔹 Test Email Sending
+@app.route('/test-email', methods=['GET'])
+def test_email():
+    try:
+        msg = Message("Test Email", recipients=["your_email@gmail.com"])
+        msg.body = "This is a test email from Flask."
+        mail.send(msg)
+        return jsonify({"message": "Test email sent successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # 🔹 Handle Form Submission and Send Email
 @app.route('/submit-form', methods=['POST'])
 def submit_form():
     try:
-        form_data = request.json  # Get JSON data from frontend
-
-        # 🔹 Generate the PDF
+        form_data = request.json
         pdf_content = generate_pdf(form_data)
-
-        # 🔹 Create Email with PDF Attachment
         recipient_email = os.getenv("RECIPIENT_EMAIL")
+
         if not recipient_email:
             return jsonify({"error": "Recipient email not configured"}), 500
         
@@ -79,12 +84,12 @@ def submit_form():
         msg.body = "Attached is the submitted form in PDF format."
         msg.attach("submission.pdf", "application/pdf", pdf_content)
         
-        # 🔹 Send the Email
         mail.send(msg)
+        print("✅ Email sent successfully!")  # Debugging log
         return jsonify({"message": "Form submitted successfully and sent via email!"}), 200
     
     except Exception as e:
-        print("Error:", str(e))  # Log error for debugging
+        print("❌ Error sending email:", str(e))  # Debugging log
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
