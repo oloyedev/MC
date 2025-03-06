@@ -12,14 +12,14 @@ from reportlab.lib.styles import getSampleStyleSheet
 load_dotenv()
 app = Flask(__name__)
 
-# 🔹 Allow ONLY requests from your frontend
+# ✅ Allow requests from Vercel frontend
 CORS(app, resources={r"/*": {"origins": "https://homebasebank-1smm.vercel.app"}})
 
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({"message": "Server is running!"}), 200
 
-# 🔹 Mail Configuration
+# ✅ Email Configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -31,49 +31,53 @@ app.config['MAIL_SUPPRESS_SEND'] = False  # Ensure Flask-Mail actually sends ema
 
 mail = Mail(app)
 
-# 🔹 Function to Generate PDF
+# ✅ Function to Generate PDF
 def generate_pdf(data):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     elements = []
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("Attestation Form", styles["Title"]))
+    elements.append(Paragraph("Basic Information, Referee, and Certificate Verification Form", styles["Title"]))
     elements.append(Spacer(1, 12))
 
     def add_entry(label, value):
         elements.append(Paragraph(f"<b>{label}:</b> {value}", styles["Normal"]))
         elements.append(Spacer(1, 6))
 
+    # ✅ Matching Form Fields from Frontend
     fields = [
-        "Referee1Name", "Referee1Address", "Referee2Name", "Referee2Address", 
-        "Referee3Name", "Referee3Address", "Institution", "Registryaddress", 
-        "Attestationname", "Signature", "Date", "Comments", "Hcname", "Hcsignature"
+        "fullName", "dob", "stateOfOrigin", "residentialAddress", "permanentHomeAddress",
+        "mobile", "landline", "email", "idCard", "spouse", "pension", "nhf", "taxNumber",
+        "position", "location", "dateOfResumption", "medicalCondition", "conviction",
+        "previousEmployment", "dateOfDisengagement", "nextOfKinName", "nextOfKinAddress",
+        "nextOfKinPhone", "nextOfKinOccupation", "nextOfKinDesignation", "nextOfKinRelationship",
+        "nextOfKinOfficeAddress", "childrenCount", "institution", "registryAddress",
+        "attestationName", "signature", "date", "comments", "hcName", "hcSignature"
     ]
-    
+
+    # ✅ Referee Fields
+    for i in range(1, 4):
+        fields.append(f"referee{i}Name")
+        fields.append(f"referee{i}Address")
+
+    # ✅ Children Fields
+    for i in range(1, 5):
+        fields.append(f"child{i}Name")
+        fields.append(f"child{i}Age")
+
     for field in fields:
-        add_entry(field.replace("Registryaddress", "Registry Address").replace("Attestationname", "Attestation Name"), data.get(field, "N/A"))
+        add_entry(field.replace("_", " ").title(), data.get(field, "N/A"))
 
     doc.build(elements)
     buffer.seek(0)
     return buffer.getvalue()
 
-# 🔹 Test Email Sending
-@app.route('/test-email', methods=['GET'])
-def test_email():
-    try:
-        msg = Message("Test Email", recipients=["your_email@gmail.com"])
-        msg.body = "This is a test email from Flask."
-        mail.send(msg)
-        return jsonify({"message": "Test email sent successfully!"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# 🔹 Handle Form Submission and Send Email
+# ✅ Handle Form Submission and Send Email
 @app.route('/submit-form', methods=['POST'])
 def submit_form():
     try:
-        form_data = request.json
+        form_data = request.json  # Get JSON data from frontend
         pdf_content = generate_pdf(form_data)
         recipient_email = os.getenv("RECIPIENT_EMAIL")
 
