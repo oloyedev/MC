@@ -19,8 +19,7 @@ CORS(app, resources={r"/*": {"origins": "https://homebasebank-1smm.vercel.app"}}
 def home():
     return jsonify({"message": "Backend is working!"})
 
-if __name__ == "__main__":
-    app.run(debug=True)
+
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Gmail SMTP server
 app.config['MAIL_PORT'] = 587  # TLS Port
