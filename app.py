@@ -13,7 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # ✅ Allow requests from Vercel frontend
-CORS(app, resources={r"/*": {"origins": "https://homebasebank-1smm.vercel.app"}})
+CORS(app, resources={r"/*": {"origins": "https://homebasebank-wuq2.vercel.app/"}})
 
 @app.route('/', methods=['GET'])
 def home():
