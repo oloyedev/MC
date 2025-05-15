@@ -8,18 +8,18 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-# Load environment variables
+
 load_dotenv()
 app = Flask(__name__)
 
-# ✅ Allow requests from Vercel frontend
+
 CORS(app, resources={r"/*": {"origins": "https://homebasebank-wuq2.vercel.app"}})
 
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({"message": "Server is running!"}), 200
 
-# ✅ Email Configuration
+
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -31,7 +31,6 @@ app.config['MAIL_SUPPRESS_SEND'] = False  # Ensure Flask-Mail actually sends ema
 
 mail = Mail(app)
 
-# ✅ Function to Generate PDF
 def generate_pdf(data):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -45,7 +44,7 @@ def generate_pdf(data):
         elements.append(Paragraph(f"<b>{label}:</b> {value}", styles["Normal"]))
         elements.append(Spacer(1, 6))
 
-    # ✅ Matching Form Fields from Frontend
+    
     fields = [
         "fullName", "dob", "stateOfOrigin", "residentialAddress", "permanentHomeAddress",
         "mobile", "landline", "email", "idCard", "spouse", "pension", "nhf", "taxNumber",
@@ -56,12 +55,12 @@ def generate_pdf(data):
         "attestationName", "signature", "date", "comments", "hcName", "hcSignature"
     ]
 
-    # ✅ Referee Fields
+
     for i in range(1, 4):
         fields.append(f"referee{i}Name")
         fields.append(f"referee{i}Address")
 
-    # ✅ Children Fields
+ 
     for i in range(1, 5):
         fields.append(f"child{i}Name")
         fields.append(f"child{i}Age")
